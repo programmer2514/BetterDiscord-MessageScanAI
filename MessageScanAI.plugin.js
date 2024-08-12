@@ -3,7 +3,7 @@
  * @author TenorTheHusky
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 1.0.0
+ * @version 1.1.0
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -21,12 +21,18 @@ module.exports = (() => {
         github_username: 'programmer2514',
       },
       ],
-      version: '1.0.0',
+      version: '1.1.0',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
       github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
     },
     changelog: [{
+      title: '1.1.0',
+      items: [
+        'Fixed plugin not loading on reload or after message edit',
+        'Fixed plugin occasionally breaking due to BDFDB randomly reloading the entire UI',
+      ],
+    }, {
       title: '1.0.0',
       items: [
         'Initial release',
@@ -110,17 +116,27 @@ module.exports = (() => {
 
     // Main plugin code
     initialize = async () => {
-      // Clean up old buttons
-      this.terminate();
-
       // Make this accessable to arrow functions
       let _this = this;
 
+      // Ensure plugin is ready to load
+      if (!document.querySelector('.buttonContainer_f9f2ca')) {
+        setTimeout(() => {
+          _this.initialize();
+        }, 250);
+        return;
+      }
+
+      // Clean up old buttons
+      this.terminate();
+
       // Abstract classes
+      this.appLayers = 'layers_a01fb1';
+      this.appWrapper = 'app_a01fb1';
       this.injectPoint = 'buttonContainer_f9f2ca';
       this.messageContent = 'messageContent_f9f2ca';
       this.messageListItem = 'messageListItem_d5deea';
-      this.observedContainer = document.querySelector('.content_a4d4d9');
+      this.observedContainer = document.querySelector('.app_bd26cc');
 
       // Initialize button icons
       this.iconScan = `
@@ -151,15 +167,19 @@ module.exports = (() => {
       // Add mutation observer to insert new buttons as needed
       this.messageObserver = new MutationObserver((mutationList) => {
         setTimeout(() => {
-          try {
-            mutationList.forEach((mutationRecord) => {
-              mutationRecord.addedNodes.forEach((node) => {
-                if (node.classList.contains(this.injectPoint))
-                  _this.injectButton(node);
-              });
+          mutationList.forEach((mutationRecord) => {
+            mutationRecord.addedNodes.forEach((node) => {
+              if (node.classList?.contains(_this.injectPoint))
+                _this.injectButton(node);
+
+              // BDFDB compatibility
+              if (node.classList?.contains(_this.appLayers) || node.classList?.contains(_this.appWrapper))
+                _this.initialize();
             });
-          }
-          catch {}
+            if (mutationRecord.target.classList?.contains(_this.injectPoint)) {
+              _this.injectButton(mutationRecord.target);
+            }
+          });
         }, 0);
       });
 
@@ -190,6 +210,8 @@ module.exports = (() => {
 
       // Delete plugin fields
       delete(this.apiKey);
+      delete(this.appLayers);
+      delete(this.appWrapper);
       delete(this.iconClear);
       delete(this.iconScan);
       delete(this.injectPoint);
@@ -224,62 +246,65 @@ module.exports = (() => {
     };
 
     injectButton = (parentNode) => {
-      // Create new button by cloning existing button and insert it before original
-      let discordButton = parentNode.firstElementChild.firstElementChild.firstElementChild;
-      let newButton = discordButton.cloneNode(true);
-      discordButton.before(newButton);
+      try {
+        // Create new button by cloning existing button and insert it before original
+        let discordButton = parentNode.firstElementChild.firstElementChild.firstElementChild;
+        let newButton = discordButton.cloneNode(true);
+        discordButton.before(newButton);
 
-      // Update new button to look how we want
-      newButton.classList.add('msai-element');
-      BdApi.UI.createTooltip(newButton, 'Scan With AI');
-      newButton.setAttribute('aria-label', 'Scan With AI');
-      newButton.removeAttribute('aria-expanded');
-      newButton.firstElementChild.innerHTML = this.iconScan;
+        // Update new button to look how we want
+        newButton.classList.add('msai-element');
+        BdApi.UI.createTooltip(newButton, 'Scan With AI');
+        newButton.setAttribute('aria-label', 'Scan With AI');
+        newButton.removeAttribute('aria-expanded');
+        newButton.firstElementChild.innerHTML = this.iconScan;
 
-      // Update new button to act how we want
-      newButton.addEventListener('click', async (e) => {
-        // Get parent message of clicked button
-        let targetMessage = e.target;
-        while (!targetMessage.classList.contains(this.messageListItem))
-          targetMessage = targetMessage.parentElement;
+        // Update new button to act how we want
+        newButton.addEventListener('click', async (e) => {
+          // Get parent message of clicked button
+          let targetMessage = e.target;
+          while (!targetMessage.classList.contains(this.messageListItem))
+            targetMessage = targetMessage.parentElement;
 
-        // Get message body
-        let messageBody = targetMessage.querySelector('.' + this.messageContent);
+          // Get message body
+          let messageBody = targetMessage.querySelector('.' + this.messageContent);
 
-        // Clear message instead of generating a new one if one is already present
-        if (messageBody.querySelector('.msai-msg')) {
-          messageBody.querySelector('.msai-msg').remove();
-          targetMessage.style.removeProperty('background');
-          targetMessage.style.removeProperty('box-shadow');
+          // Clear message instead of generating a new one if one is already present
+          if (messageBody.querySelector('.msai-msg')) {
+            messageBody.querySelector('.msai-msg').remove();
+            targetMessage.style.removeProperty('background');
+            targetMessage.style.removeProperty('box-shadow');
 
-          // Return button to normal
-          newButton.firstElementChild.innerHTML = this.iconScan;
-          newButton.setAttribute('aria-label', 'Scan With AI');
-          BdApi.UI.createTooltip(newButton, 'Scan With AI');
-          return;
-        }
+            // Return button to normal
+            newButton.firstElementChild.innerHTML = this.iconScan;
+            newButton.setAttribute('aria-label', 'Scan With AI');
+            BdApi.UI.createTooltip(newButton, 'Scan With AI');
+            return;
+          }
 
-        // Run text through AI
-        let isScam = await this.askAI(targetMessage.textContent);
-        if (isScam === null) return;
+          // Run text through AI
+          let isScam = await this.askAI(targetMessage.textContent);
+          if (isScam === null) return;
 
-        // Set new icon/tooltip/label for clicked button
-        newButton.firstElementChild.innerHTML = this.iconClear;
-        newButton.setAttribute('aria-label', 'Clear AI Scan');
-        BdApi.UI.createTooltip(newButton, 'Clear AI Scan');
+          // Set new icon/tooltip/label for clicked button
+          newButton.firstElementChild.innerHTML = this.iconClear;
+          newButton.setAttribute('aria-label', 'Clear AI Scan');
+          BdApi.UI.createTooltip(newButton, 'Clear AI Scan');
 
-        // Highlight message based on result
-        if (isScam) {
-          targetMessage.style.background = 'rgba(255, 0, 0, 0.2)';
-          targetMessage.style.boxShadow = '2px 0 0 0 red inset';
-          messageBody.innerHTML += '<div class="msai-msg" style="color: red; font-size: 75%;">THIS MESSAGE IS LIKELY A SCAM</div>';
-        }
-        else {
-          targetMessage.style.background = 'rgba(0, 255, 0, 0.2)';
-          targetMessage.style.boxShadow = '2px 0 0 0 green inset';
-          messageBody.innerHTML += '<div class="msai-msg" style="color: green; font-size: 75%;">This message is likely safe</div>';
-        }
-      });
+          // Highlight message based on result
+          if (isScam) {
+            targetMessage.style.background = 'rgba(255, 0, 0, 0.2)';
+            targetMessage.style.boxShadow = '2px 0 0 0 red inset';
+            messageBody.innerHTML += '<div class="msai-msg" style="color: red; font-size: 75%;">THIS MESSAGE IS LIKELY A SCAM</div>';
+          }
+          else {
+            targetMessage.style.background = 'rgba(0, 255, 0, 0.2)';
+            targetMessage.style.boxShadow = '2px 0 0 0 green inset';
+            messageBody.innerHTML += '<div class="msai-msg" style="color: green; font-size: 75%;">This message is likely safe</div>';
+          }
+        });
+      }
+      catch {}
     };
 
     // Shows a ToS accept/decline modal
