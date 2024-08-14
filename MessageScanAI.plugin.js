@@ -3,7 +3,7 @@
  * @author TenorTheHusky
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 1.1.0
+ * @version 1.2.0
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -21,12 +21,18 @@ module.exports = (() => {
         github_username: 'programmer2514',
       },
       ],
-      version: '1.1.0',
+      version: '1.2.0',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
       github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
     },
     changelog: [{
+      title: '1.2.0',
+      items: [
+        'Changed AI model to improve accuracy',
+        'Prevented plugin from overwriting API key when rate limited',
+      ],
+    }, {
       title: '1.1.0',
       items: [
         'Fixed plugin not loading on reload or after message edit',
@@ -355,18 +361,18 @@ module.exports = (() => {
            obtain a key.**
            \nTo continue, please select "Get API Key", create an API key in a
            new project, then head on over to MessageScanAI's plugin settings and
-           paste it in the appropriate text box.`,
+           paste it in the appropriate text box.
+           \n\n*You may have been rate limited. In this case, wait a few minutes
+           and try again.*`,
           {
             confirmText: 'Get API Key',
             cancelText: 'I already have a key',
             onConfirm: () => {
               require('electron').shell
                 .openExternal('https://makersuite.google.com/app/apikey');
-              BdApi.setData(this.meta.name, 'apiKey', 'Paste your API key here');
               this.initialize();
             },
             onCancel: () => {
-              BdApi.setData(this.meta.name, 'apiKey', 'Paste your API key here');
               this.initialize();
             },
           },
@@ -376,7 +382,7 @@ module.exports = (() => {
     // Calls the Google Gemini API and returns whether a message is a scam or not
     askAI = async (message) => {
       const response = await BdApi.Net.fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro-latest:generateContent',
         {
           method: 'POST',
           headers: {
@@ -387,8 +393,7 @@ module.exports = (() => {
             contents: [{
               parts: [{
                 text: `The following message was taken from a Discord chat.
-                       This chat may have been with a bot or with a human.
-                       Is it a dangerous scam or phishing attempt?
+                       Is it a scam or phishing attempt?
                        Respond with one word: "yes" or "no".
                        \n${message}`,
               }],
