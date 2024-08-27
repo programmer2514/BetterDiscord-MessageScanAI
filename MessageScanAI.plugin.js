@@ -1,9 +1,9 @@
 /**
  * @name MessageScanAI
- * @author TenorTheHusky
+ * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 1.2.0
+ * @version 1.2.1
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -16,27 +16,28 @@ module.exports = (() => {
     info: {
       name: 'MessageScanAI',
       authors: [{
-        name: 'TenorTheHusky',
+        name: 'programmer2514',
         discord_id: '563652755814875146',
         github_username: 'programmer2514',
       },
       ],
-      version: '1.2.0',
+      version: '1.2.1',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
       github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
     },
     changelog: [{
-      title: '1.2.0',
+      title: '1.2.1',
       items: [
-        'Changed AI model to improve accuracy',
-        'Prevented plugin from overwriting API key when rate limited',
+        'Fixed plugin occasionally adding 2 "Scan with AI" buttons',
       ],
     }, {
-      title: '1.1.0',
+      title: '1.1.0 - 1.2.0',
       items: [
         'Fixed plugin not loading on reload or after message edit',
         'Fixed plugin occasionally breaking due to BDFDB randomly reloading the entire UI',
+        'Changed AI model to improve accuracy',
+        'Prevented plugin from overwriting API key when rate limited',
       ],
     }, {
       title: '1.0.0',
@@ -253,6 +254,11 @@ module.exports = (() => {
 
     injectButton = (parentNode) => {
       try {
+        // Remove button if it already exists
+        parentNode.querySelectorAll('.msai-element').forEach((elem) => {
+          elem.remove();
+        });
+        
         // Create new button by cloning existing button and insert it before original
         let discordButton = parentNode.firstElementChild.firstElementChild.firstElementChild;
         let newButton = discordButton.cloneNode(true);
