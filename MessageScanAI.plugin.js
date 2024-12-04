@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 1.2.1
+ * @version 1.3.0
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -21,23 +21,25 @@ module.exports = (() => {
         github_username: 'programmer2514',
       },
       ],
-      version: '1.2.1',
+      version: '1.3.0',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
       github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
     },
     changelog: [{
-      title: '1.2.1',
+      title: '1.3.0',
       items: [
-        'Fixed plugin occasionally adding 2 "Scan with AI" buttons',
+        'Updated plugin for new Discord UI',
+        'Switched to non-deprecated Gemini model',
       ],
     }, {
-      title: '1.1.0 - 1.2.0',
+      title: '1.1.0 - 1.2.1',
       items: [
         'Fixed plugin not loading on reload or after message edit',
         'Fixed plugin occasionally breaking due to BDFDB randomly reloading the entire UI',
         'Changed AI model to improve accuracy',
         'Prevented plugin from overwriting API key when rate limited',
+        'Fixed plugin occasionally adding 2 "Scan with AI" buttons',
       ],
     }, {
       title: '1.0.0',
@@ -164,7 +166,7 @@ module.exports = (() => {
 
       // Show setup modals
       if (!this.tosAccepted) this.showTosModal();
-      else if (!this.apiKey) this.showSetupModal();
+      else if (!this.apiKey && !this.modalShown) this.showSetupModal();
 
       // Insert buttons
       for (let node of document.querySelectorAll('.' + this.injectPoint)) {
@@ -258,9 +260,9 @@ module.exports = (() => {
         parentNode.querySelectorAll('.msai-element').forEach((elem) => {
           elem.remove();
         });
-        
+
         // Create new button by cloning existing button and insert it before original
-        let discordButton = parentNode.firstElementChild.firstElementChild.firstElementChild;
+        let discordButton = parentNode.lastElementChild.lastElementChild.lastElementChild;
         let newButton = discordButton.cloneNode(true);
         discordButton.before(newButton);
 
@@ -327,7 +329,7 @@ module.exports = (() => {
       this.modalShown = true;
       BdApi.UI.showConfirmationModal(
         'Google Gemini Terms of Service',
-          `**MessageScanAI** makes use of the Google Gemini API to provide you
+        `**MessageScanAI** makes use of the Google Gemini API to provide you
            with accurate scam and phishing information. Use of this plugin is
            subject to the [Google Gemini Terms of Service and Privacy Policy](https://ai.google.dev/gemini-api/terms).
            \nBy clicking "Accept", you agree to the aforementioned Terms and
@@ -339,21 +341,21 @@ module.exports = (() => {
            will be sent to Google.* ***Be aware that Google may use any messages
            scanned by this plugin to train its AI model.***
           `,
-          {
-            danger: true,
-            confirmText: 'Accept',
-            cancelText: 'Decline',
-            onConfirm: () => {
-              _this.tosAccepted = true;
-              BdApi.setData(this.meta.name, 'tosAccepted', 'true');
-              this.initialize();
-            },
-            onCancel: () => {
-              _this.tosAccepted = false;
-              BdApi.setData(this.meta.name, 'tosAccepted', 'false');
-              BdApi.Plugins.disable(this.meta.name);
-            },
+        {
+          danger: true,
+          confirmText: 'Accept',
+          cancelText: 'Decline',
+          onConfirm: () => {
+            _this.tosAccepted = true;
+            BdApi.setData(this.meta.name, 'tosAccepted', 'true');
+            this.initialize();
           },
+          onCancel: () => {
+            _this.tosAccepted = false;
+            BdApi.setData(this.meta.name, 'tosAccepted', 'false');
+            BdApi.Plugins.disable(this.meta.name);
+          },
+        },
       );
     };
 
@@ -362,7 +364,7 @@ module.exports = (() => {
       this.modalShown = true;
       BdApi.UI.showConfirmationModal(
         'Setup',
-          `**MessageScanAI** needs a Google Gemini API key in order to work
+        `**MessageScanAI** needs a Google Gemini API key in order to work
            properly. Note that per Google's ToS, **you must be 18 in order to
            obtain a key.**
            \nTo continue, please select "Get API Key", create an API key in a
@@ -370,25 +372,30 @@ module.exports = (() => {
            paste it in the appropriate text box.
            \n\n*You may have been rate limited. In this case, wait a few minutes
            and try again.*`,
-          {
-            confirmText: 'Get API Key',
-            cancelText: 'I already have a key',
-            onConfirm: () => {
-              require('electron').shell
-                .openExternal('https://makersuite.google.com/app/apikey');
-              this.initialize();
-            },
-            onCancel: () => {
-              this.initialize();
-            },
+        {
+          confirmText: 'Get API Key',
+          cancelText: 'I already have a key',
+          onConfirm: () => {
+            require('electron').shell
+              .openExternal('https://makersuite.google.com/app/apikey');
+            this.initialize();
           },
+          onCancel: () => {
+            this.initialize();
+          },
+        },
       );
     };
 
     // Calls the Google Gemini API and returns whether a message is a scam or not
     askAI = async (message) => {
+      if (!this.apiKey) {
+        this.showSetupModal();
+        return null;
+      }
+
       const response = await BdApi.Net.fetch(
-        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.0-pro-latest:generateContent',
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
         {
           method: 'POST',
           headers: {
@@ -420,6 +427,7 @@ module.exports = (() => {
           }),
         },
       );
+
       if (!response.ok) {
         this.showSetupModal();
         return null;
