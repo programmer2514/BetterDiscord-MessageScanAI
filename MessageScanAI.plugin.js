@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 1.3.0
+ * @version 1.3.1
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -21,25 +21,26 @@ module.exports = (() => {
         github_username: 'programmer2514',
       },
       ],
-      version: '1.3.0',
+      version: '1.3.1',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
       github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
     },
     changelog: [{
-      title: '1.3.0',
+      title: '1.3.1',
       items: [
-        'Updated plugin for new Discord UI',
-        'Switched to non-deprecated Gemini model',
+        'Tweaked request parameters for better accuracy',
       ],
     }, {
-      title: '1.1.0 - 1.2.1',
+      title: '1.1.0 - 1.3.0',
       items: [
         'Fixed plugin not loading on reload or after message edit',
         'Fixed plugin occasionally breaking due to BDFDB randomly reloading the entire UI',
         'Changed AI model to improve accuracy',
         'Prevented plugin from overwriting API key when rate limited',
         'Fixed plugin occasionally adding 2 "Scan with AI" buttons',
+        'Updated plugin for new Discord UI',
+        'Switched to non-deprecated Gemini model',
       ],
     }, {
       title: '1.0.0',
@@ -406,6 +407,7 @@ module.exports = (() => {
             contents: [{
               parts: [{
                 text: `The following message was taken from a Discord chat.
+                       It may contain a message, link, or attachment.
                        Is it a scam or phishing attempt?
                        Respond with one word: "yes" or "no".
                        \n${message}`,
