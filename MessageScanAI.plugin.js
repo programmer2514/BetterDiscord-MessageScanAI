@@ -7,7 +7,7 @@
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
- * @source https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js
+ * @source https://github.com/programmer2514/BetterDiscord-MessageScanAI/raw/refs/heads/main/MessageScanAI.plugin.js
  */
 
 module.exports = (() => {
