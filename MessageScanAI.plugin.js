@@ -7,7 +7,7 @@
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
- * @source https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js
+ * @source https://github.com/programmer2514/BetterDiscord-MessageScanAI/raw/refs/heads/main/MessageScanAI.plugin.js
  */
 
 module.exports = (() => {
@@ -24,7 +24,7 @@ module.exports = (() => {
       version: '1.4.0',
       description: 'Adds a button to scan messages for phishing/scams with AI',
       github: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI',
-      github_raw: 'https://raw.githubusercontent.com/programmer2514/BetterDiscord-MessageScanAI/main/MessageScanAI.plugin.js',
+      github_raw: 'https://github.com/programmer2514/BetterDiscord-MessageScanAI/raw/refs/heads/main/MessageScanAI.plugin.js',
     },
     changelog: [{
       title: '1.4.0',
@@ -70,7 +70,7 @@ module.exports = (() => {
                   async (err, _response, body) => {
                     if (err) {
                       return require('electron').shell
-                        .openExternal('https://betterdiscord.net/ghdl?url=https://raw.githubusercontent.com/rauenzi/BDPluginLibrary/master/release/0PluginLibrary.plugin.js');
+                        .openExternal('https://github.com/zerebos/BDPluginLibrary/raw/refs/heads/master/release/0PluginLibrary.plugin.js');
                     }
                     await new Promise(r => require('fs').writeFile(require('path')
                       .join(BdApi.Plugins.folder, '0PluginLibrary.plugin.js'), body, r));
