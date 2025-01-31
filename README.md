@@ -3,7 +3,7 @@ A simple BetterDiscord plugin that adds a button to scan messages for phishing/s
 
 ***NOTE:*** *No AI is perfect. You most likely will stumble across some false positives. This will hopefully improve with time and updates.*
 
-![Plugin Preview](https://github.com/user-attachments/assets/e4eb06fe-0f04-4f70-971f-b95b65aae16a)
+![Plugin Preview](https://github.com/user-attachments/assets/c9ed1312-2fe6-403b-ade6-e517a5596c34)
 
 ### How to install
 1) Make sure you have [BetterDiscord](https://betterdiscord.app/) installed
