@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.0.0
+ * @version 2.0.1
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -13,19 +13,12 @@
 const config = {
   changelog: [
     {
-      title: '2.0.0',
+      title: '2.0.1',
       type: 'added',
       items: [
-        'Reworked message prompt',
-        'Implemented more nuanced and complete message scanning',
-        'Updated default model to Gemini 1.5 Flash',
-        'Added support for Discord light mode',
-        'Added an option to choose the AI model used for scanning',
-        'Added an option to choose between several highlight styles',
-        'Added an option to force-enable light mode (e.g. for light themes)',
-        'Plugin no longer depends on ZeresPluginLibrary',
-        'Greatly increased robustness against Discord updates',
-        'Improved internal tooltip handling',
+        'Updated default model to Gemini 2.0 Flash-Lite',
+        'FOR BEST RESULTS, PLEASE USE THE RECOMMENDED MODEL',
+        'IF YOU ARE ALREADY USING THE PLUGIN, YOU MUST CHANGE THIS MANUALLY',
       ],
     },
     {
@@ -43,6 +36,16 @@ const config = {
         'Improved scam recognition',
         'Added prompt injection guards',
         'Updated web request to new API standards',
+        'Reworked message prompt',
+        'Implemented more nuanced and complete message scanning',
+        'Updated default model to Gemini 1.5 Flash',
+        'Added support for Discord light mode',
+        'Added an option to choose the AI model used for scanning',
+        'Added an option to choose between several highlight styles',
+        'Added an option to force-enable light mode (e.g. for light themes)',
+        'Plugin no longer depends on ZeresPluginLibrary',
+        'Greatly increased robustness against Discord updates',
+        'Improved internal tooltip handling',
       ],
     },
     {
@@ -67,9 +70,9 @@ const config = {
       id: 'gemini-model',
       name: 'Gemini Model',
       note: 'DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING',
-      value: 'gemini-1.5-flash',
+      value: 'gemini-2.0-flash-lite',
       options: [
-        { label: 'API Error', value: 'gemini-1.5-flash' },
+        { label: 'API Error', value: 'gemini-2.0-flash-lite' },
       ],
     },
     {
@@ -101,7 +104,7 @@ const settings = {
   tosAccepted: () => { return runtime.api.Data.load('tos-accepted'); },
   forceLight: () => { return runtime.api.Data.load('force-light'); },
   apiKey: () => { return runtime.api.Data.load('api-key') ? runtime.api.Data.load('api-key') : ''; },
-  geminiModel: () => { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-1.5-flash'; },
+  geminiModel: () => { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-2.0-flash-lite'; },
   highlightStyle: () => { return runtime.api.Data.load('highlight-style') ? runtime.api.Data.load('highlight-style') : 'line-highlight'; },
 };
 
@@ -592,7 +595,7 @@ module.exports = class MessageScanAI {
       let id = o.name.split('/')[1];
 
       return {
-        label: (id === 'gemini-1.5-flash') ? o.displayName + ' (Recommended)' : o.displayName,
+        label: (id === 'gemini-2.0-flash-lite') ? o.displayName + ' (Recommended)' : o.displayName,
         value: id,
       };
     }).filter((entry) => {
