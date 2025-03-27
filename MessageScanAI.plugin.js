@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.0.1
+ * @version 2.1.0
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -13,46 +13,11 @@
 const config = {
   changelog: [
     {
-      title: '2.0.1',
+      title: '2.1.0',
       type: 'added',
       items: [
-        'Updated default model to Gemini 2.0 Flash-Lite',
-        'FOR BEST RESULTS, PLEASE USE THE RECOMMENDED MODEL',
-        'IF YOU ARE ALREADY USING THE PLUGIN, YOU MUST CHANGE THIS MANUALLY',
-      ],
-    },
-    {
-      title: '1.1.0 - 1.4.0',
-      type: 'added',
-      items: [
-        'Fixed plugin not loading on reload or after message edit',
-        'Fixed plugin occasionally breaking due to BDFDB randomly reloading the entire UI',
-        'Changed AI model to improve accuracy',
-        'Prevented plugin from overwriting API key when rate limited',
-        'Fixed plugin occasionally adding 2 "Scan with AI" buttons',
-        'Updated plugin for new Discord UI',
-        'Switched to non-deprecated Gemini model',
-        'Tweaked request parameters for better accuracy',
-        'Improved scam recognition',
-        'Added prompt injection guards',
-        'Updated web request to new API standards',
-        'Reworked message prompt',
-        'Implemented more nuanced and complete message scanning',
-        'Updated default model to Gemini 1.5 Flash',
-        'Added support for Discord light mode',
-        'Added an option to choose the AI model used for scanning',
-        'Added an option to choose between several highlight styles',
-        'Added an option to force-enable light mode (e.g. for light themes)',
-        'Plugin no longer depends on ZeresPluginLibrary',
-        'Greatly increased robustness against Discord updates',
-        'Improved internal tooltip handling',
-      ],
-    },
-    {
-      title: '1.0.0',
-      type: 'added',
-      items: [
-        'Initial release',
+        'Substantial performance improvements',
+        'Removed unnecessary Webpack modules',
       ],
     },
   ],
@@ -100,27 +65,28 @@ const config = {
   ],
 };
 
-const settings = {
-  tosAccepted: () => { return runtime.api.Data.load('tos-accepted'); },
-  forceLight: () => { return runtime.api.Data.load('force-light'); },
-  apiKey: () => { return runtime.api.Data.load('api-key') ? runtime.api.Data.load('api-key') : ''; },
-  geminiModel: () => { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-2.0-flash-lite'; },
-  highlightStyle: () => { return runtime.api.Data.load('highlight-style') ? runtime.api.Data.load('highlight-style') : 'line-highlight'; },
-};
-
 const runtime = {
   meta: null,
   api: null,
+  plugin: null,
   modalShown: null,
   messageObserver: null,
   settingsLoaded: null,
 };
 
+const settings = {
+  get tosAccepted() { return runtime.api.Data.load('tos-accepted'); },
+  get forceLight() { return runtime.api.Data.load('force-light'); },
+  get apiKey() { return runtime.api.Data.load('api-key') ? runtime.api.Data.load('api-key') : ''; },
+  get geminiModel() { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-2.0-flash-lite'; },
+  get highlightStyle() { return runtime.api.Data.load('highlight-style') ? runtime.api.Data.load('highlight-style') : 'line-highlight'; },
+};
+
 const modules = {
-  app: null,
-  msg: null,
-  styles: null,
-  aside: null,
+  get app() { return this._app ?? (this._app = runtime.api.Webpack.getByKeys('app', 'layers')); },
+  get msg() { return this._msg ?? (this._msg = runtime.api.Webpack.getByKeys('replyIcon', 'buttonContainer', 'messageContent')); },
+  get styles() { return this._styles ?? (this._styles = runtime.api.Webpack.getByKeys('ephemeral', 'replying', 'messageListItem')); },
+  get aside() { return this._aside ?? (this._aside = runtime.api.Webpack.getByKeys('appAsidePanelWrapper', 'notAppAsidePanel', 'app')); },
 };
 
 const icons = {
@@ -143,6 +109,7 @@ module.exports = class MessageScanAI {
   constructor(meta) {
     runtime.meta = meta;
     runtime.api = new BdApi(runtime.meta.name);
+    runtime.plugin = this;
   }
 
   // Initialize the plugin when it is enabled
@@ -164,36 +131,19 @@ module.exports = class MessageScanAI {
     }
 
     // Show setup modal
-    if (!settings.tosAccepted())
+    if (!settings.tosAccepted)
       this.showTosModal();
 
-    // Load Discord modules
-    const UserStore = runtime.api.Webpack.getByKeys('getCurrentUser', 'getUser');
-    const Dispatcher = runtime.api.Webpack.getByKeys('dispatch', 'isDispatching');
-
     // Start plugin
-    if (UserStore.getCurrentUser()) {
-      console.log(`%c[${runtime.meta.name}] ` + '%cAttempting pre-load...',
-        'color: #3a71c1; font-weight: 700;', '');
-      await this.initialize();
-    }
-
-    Dispatcher.subscribe('POST_CONNECTION_OPEN', this.initialize);
-
-    console.log(`%c[${runtime.meta.name}] `
-      + `%c(v${runtime.meta.version}) `
-      + '%chas started.', 'color: #3a71c1; font-weight: 700;',
-    'color: #666; font-weight: 600;', '');
+    this.initialize();
+    runtime.api.Logger.info('Enabled');
   };
 
   // Terminate the plugin when it is disabled
   stop = async () => {
     this.terminate();
 
-    console.log(`%c[${runtime.meta.name}] `
-      + `%c(v${runtime.meta.version}) `
-      + '%chas stopped.', 'color: #3a71c1; font-weight: 700;',
-    'color: #666; font-weight: 600;', '');
+    runtime.api.Logger.info('Disabled');
   };
 
   // Re-initialize plugin on switch
@@ -201,20 +151,9 @@ module.exports = class MessageScanAI {
 
   // Main plugin code
   initialize = async () => {
-    // Make this accessible to arrow functions
-    let _this = this;
-
-    // Get modules
-    modules.app = runtime.api.Webpack.getByKeys('app', 'layers');
-    modules.msg = runtime.api.Webpack.getByKeys('replyIcon', 'buttonContainer', 'messageContent');
-    modules.styles = runtime.api.Webpack.getByKeys('ephemeral', 'replying', 'messageListItem');
-    modules.aside = runtime.api.Webpack.getByKeys('appAsidePanelWrapper', 'notAppAsidePanel', 'app');
-
     // Ensure plugin is ready to load
-    if (!document.querySelector('.' + modules.msg.buttonContainer)) {
-      setTimeout(() => {
-        _this.initialize();
-      }, 250);
+    if (!document.querySelector('.' + modules.msg?.buttonContainer)) {
+      setTimeout(() => runtime.plugin.initialize(), 250);
       return;
     }
 
@@ -226,30 +165,28 @@ module.exports = class MessageScanAI {
     if (models) config.settings[1].options = models;
 
     // Insert buttons
-    for (let node of document.querySelectorAll('.' + modules.msg.buttonContainer)) {
-      this.injectButton(node);
-    }
+    document.querySelectorAll('.' + modules.msg?.buttonContainer).forEach(node => runtime.plugin.injectButton(node));
 
     // Add mutation observer to insert new buttons as needed
     runtime.messageObserver = new MutationObserver((mutationList) => {
       setTimeout(() => {
         mutationList.forEach((mutationRecord) => {
           mutationRecord.addedNodes.forEach((node) => {
-            if (node.classList?.contains(modules.msg.buttonContainer))
-              _this.injectButton(node);
+            if (node.classList?.contains(modules.msg?.buttonContainer))
+              runtime.plugin.injectButton(node);
 
             // BDFDB compatibility
-            if (node.classList?.contains(modules.app.layers) || node.classList?.contains(modules.app.app))
-              _this.initialize();
+            if (node.classList?.contains(modules.app?.layers) || node.classList?.contains(modules.app?.app))
+              runtime.plugin.initialize();
           });
-          if (mutationRecord.target.classList?.contains(modules.msg.buttonContainer)) {
-            _this.injectButton(mutationRecord.target);
+          if (mutationRecord.target.classList?.contains(modules.msg?.buttonContainer)) {
+            runtime.plugin.injectButton(mutationRecord.target);
           }
         });
       }, 0);
     });
 
-    runtime.messageObserver.observe(document.querySelector('.' + modules.aside.app), {
+    runtime.messageObserver.observe(document.querySelector('.' + modules.aside?.app), {
       childList: true,
       subtree: true,
       attributes: false,
@@ -259,12 +196,10 @@ module.exports = class MessageScanAI {
   // Undo UI changes and stop plugin code
   terminate = async () => {
     // Remove all injected elements and styles
-    document.querySelectorAll('.msai-element').forEach((elem) => {
-      elem.remove();
-    });
+    document.querySelectorAll('.msai-element').forEach(elem => elem.remove());
     document.querySelectorAll('.msai-msg').forEach((elem) => {
       let targetMessage = elem;
-      while (!targetMessage.classList.contains(modules.styles.messageListItem))
+      while (!targetMessage.classList.contains(modules.styles?.messageListItem))
         targetMessage = targetMessage.parentElement;
       targetMessage.style.removeProperty('background');
       targetMessage.style.removeProperty('box-shadow');
@@ -278,10 +213,10 @@ module.exports = class MessageScanAI {
   // Build's the plugin's settings page
   getSettingsPanel = () => {
     // Update settings object from stored data
-    config.settings[0].value = settings.apiKey();
-    config.settings[1].value = settings.geminiModel();
-    config.settings[2].value = settings.highlightStyle();
-    config.settings[3].value = settings.forceLight();
+    config.settings[0].value = settings.apiKey;
+    config.settings[1].value = settings.geminiModel;
+    config.settings[2].value = settings.highlightStyle;
+    config.settings[3].value = settings.forceLight;
 
     return runtime.api.UI.buildSettingsPanel(
       {
@@ -300,9 +235,7 @@ module.exports = class MessageScanAI {
   injectButton = (parentNode) => {
     try {
       // Remove button if it already exists
-      parentNode.querySelectorAll('.msai-element').forEach((elem) => {
-        elem.remove();
-      });
+      parentNode.querySelectorAll('.msai-element').forEach(elem => elem.remove());
 
       // Create new button by cloning existing button and insert it before original
       let discordButton = parentNode.lastElementChild.lastElementChild.lastElementChild;
@@ -320,11 +253,11 @@ module.exports = class MessageScanAI {
       newButton.addEventListener('click', async (e) => {
         // Get parent message of clicked button
         let targetMessage = e.target;
-        while (!targetMessage.classList.contains(modules.styles.messageListItem))
+        while (!targetMessage.classList.contains(modules.styles?.messageListItem))
           targetMessage = targetMessage.parentElement;
 
         // Get message body
-        let messageBody = targetMessage.querySelectorAll('.' + modules.msg.messageContent);
+        let messageBody = targetMessage.querySelectorAll('.' + modules.msg?.messageContent);
         messageBody = messageBody[messageBody.length - 1];
 
         // Clear message instead of generating a new one if one is already present
@@ -364,7 +297,7 @@ module.exports = class MessageScanAI {
   // Highlights a message based on its scam rating
   highlightMsg = (targetMessage, messageBody, rating) => {
     let color, msg, showReason;
-    let lightMode = settings.forceLight() || document.querySelector('html').classList.contains('theme-light');
+    let lightMode = settings.forceLight || document.querySelector('html').classList.contains('theme-light');
 
     switch (rating.rating) {
       case 'safe':
@@ -401,7 +334,7 @@ module.exports = class MessageScanAI {
         break;
     }
 
-    switch (settings.highlightStyle()) {
+    switch (settings.highlightStyle) {
       case 'all':
         targetMessage.style.boxShadow = `2px 0 0 0 ${color.solid} inset`;
         targetMessage.style.background = color.highlight;
@@ -432,9 +365,6 @@ module.exports = class MessageScanAI {
   showTosModal = () => {
     if (runtime.modalShown) return;
     runtime.modalShown = true;
-
-    // Make this accessible to arrow functions
-    let _this = this;
 
     runtime.api.UI.showConfirmationModal(
       'Google Gemini Terms of Service',
@@ -517,13 +447,13 @@ module.exports = class MessageScanAI {
 
   // Calls the Google Gemini API and returns whether a message is a scam or not
   askAI = async (message) => {
-    if (!settings.apiKey()) {
+    if (!settings.apiKey) {
       this.showSetupModal();
       return null;
     }
 
     const response = await runtime.api.Net.fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel()}:generateContent?key=${settings.apiKey()}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${settings.geminiModel}:generateContent?key=${settings.apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -575,10 +505,10 @@ module.exports = class MessageScanAI {
 
   // Calls the Google Gemini API and returns a list of available models
   enumModels = async () => {
-    if (!settings.apiKey()) return null;
+    if (!settings.apiKey) return null;
 
     const response = await runtime.api.Net.fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${settings.apiKey()}`,
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${settings.apiKey}`,
       {
         method: 'GET',
         headers: {
