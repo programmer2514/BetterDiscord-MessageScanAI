@@ -1,7 +1,7 @@
 # MessageScanAI for BetterDiscord
 A BetterDiscord plugin that adds a button to scan messages for phishing/scams with AI.
 
-#### [> Check out my other plugins <](https://github.com/programmer2514/BetterDiscord-Plugins)
+#### [> Check out my other add-ons <](https://github.com/programmer2514/BetterDiscord-Stuff)
 
 ***NOTE:*** *No AI is perfect. You most likely will stumble across some false positives. This will hopefully improve with time and updates.*
 
