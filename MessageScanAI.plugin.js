@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.1.0
+ * @version 2.1.1
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -13,11 +13,10 @@
 const config = {
   changelog: [
     {
-      title: '2.1.0',
+      title: '2.1.1',
       type: 'added',
       items: [
-        'Substantial performance improvements',
-        'Removed unnecessary Webpack modules',
+        'Fixed for latest Discord version',
       ],
     },
   ],
@@ -87,6 +86,7 @@ const modules = {
   get msg() { return this._msg ?? (this._msg = runtime.api.Webpack.getByKeys('replyIcon', 'buttonContainer', 'messageContent')); },
   get styles() { return this._styles ?? (this._styles = runtime.api.Webpack.getByKeys('ephemeral', 'replying', 'messageListItem')); },
   get aside() { return this._aside ?? (this._aside = runtime.api.Webpack.getByKeys('appAsidePanelWrapper', 'notAppAsidePanel', 'app')); },
+  get button() { return this._button ?? (this._button = runtime.api.Webpack.getByKeys('wrapper', 'button', 'selected', 'separator')); },
 };
 
 const icons = {
@@ -152,7 +152,7 @@ module.exports = class MessageScanAI {
   // Main plugin code
   initialize = async () => {
     // Ensure plugin is ready to load
-    if (!document.querySelector('.' + modules.msg?.buttonContainer)) {
+    if (!document.querySelector(`.${modules.msg?.buttonContainer}`)) {
       setTimeout(() => runtime.plugin.initialize(), 250);
       return;
     }
@@ -165,7 +165,7 @@ module.exports = class MessageScanAI {
     if (models) config.settings[1].options = models;
 
     // Insert buttons
-    document.querySelectorAll('.' + modules.msg?.buttonContainer).forEach(node => runtime.plugin.injectButton(node));
+    document.querySelectorAll(`.${modules.msg?.buttonContainer}`).forEach(node => runtime.plugin.injectButton(node));
 
     // Add mutation observer to insert new buttons as needed
     runtime.messageObserver = new MutationObserver((mutationList) => {
@@ -186,7 +186,7 @@ module.exports = class MessageScanAI {
       }, 0);
     });
 
-    runtime.messageObserver.observe(document.querySelector('.' + modules.aside?.app), {
+    runtime.messageObserver.observe(document.querySelector(`.${modules.aside?.app}`), {
       childList: true,
       subtree: true,
       attributes: false,
@@ -238,7 +238,8 @@ module.exports = class MessageScanAI {
       parentNode.querySelectorAll('.msai-element').forEach(elem => elem.remove());
 
       // Create new button by cloning existing button and insert it before original
-      let discordButton = parentNode.lastElementChild.lastElementChild.lastElementChild;
+      let discordButtons = parentNode.querySelectorAll(`.${modules.button?.button}`);
+      let discordButton = discordButtons[discordButtons.length - 1];
       let newButton = discordButton.cloneNode(true);
       discordButton.before(newButton);
 
@@ -257,7 +258,7 @@ module.exports = class MessageScanAI {
           targetMessage = targetMessage.parentElement;
 
         // Get message body
-        let messageBody = targetMessage.querySelectorAll('.' + modules.msg?.messageContent);
+        let messageBody = targetMessage.querySelectorAll(`.${modules.msg?.messageContent}`);
         messageBody = messageBody[messageBody.length - 1];
 
         // Clear message instead of generating a new one if one is already present
