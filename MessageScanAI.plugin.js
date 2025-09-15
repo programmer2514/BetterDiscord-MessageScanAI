@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.1.1
+ * @version 2.1.2
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -13,10 +13,11 @@
 const config = {
   changelog: [
     {
-      title: '2.1.1',
+      title: '2.1.2',
       type: 'added',
       items: [
-        'Fixed for latest Discord version',
+        'Updated to Gemini 2.5 Flash-Lite',
+        'IF YOU ALREADY HAD THE PLUGIN, YOU WILL NEED TO MANUALLY SWITCH THE MODEL IN SETTINGS FOR IT TO CONTINUE WORKING',
       ],
     },
   ],
@@ -34,9 +35,9 @@ const config = {
       id: 'gemini-model',
       name: 'Gemini Model',
       note: 'DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING',
-      value: 'gemini-2.0-flash-lite',
+      value: 'gemini-2.5-flash-lite',
       options: [
-        { label: 'API Error', value: 'gemini-2.0-flash-lite' },
+        { label: 'API Error', value: 'gemini-2.5-flash-lite' },
       ],
     },
     {
@@ -526,7 +527,7 @@ module.exports = class MessageScanAI {
       let id = o.name.split('/')[1];
 
       return {
-        label: (id === 'gemini-2.0-flash-lite') ? o.displayName + ' (Recommended)' : o.displayName,
+        label: (id === 'gemini-2.5-flash-lite') ? o.displayName + ' (Recommended)' : o.displayName,
         value: id,
       };
     }).filter((entry) => {
