@@ -3,7 +3,7 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.1.2
+ * @version 2.1.3
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
@@ -13,10 +13,11 @@
 const config = {
   changelog: [
     {
-      title: '2.1.2',
+      title: '2.1.3',
       type: 'added',
       items: [
-        'Updated to Gemini 2.5 Flash-Lite',
+        'Fixed misaligned button',
+        'Updated to Gemini Flash-Lite Latest',
         'IF YOU ALREADY HAD THE PLUGIN, YOU WILL NEED TO MANUALLY SWITCH THE MODEL IN SETTINGS FOR IT TO CONTINUE WORKING',
       ],
     },
@@ -35,9 +36,9 @@ const config = {
       id: 'gemini-model',
       name: 'Gemini Model',
       note: 'DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING',
-      value: 'gemini-2.5-flash-lite',
+      value: 'gemini-flash-lite-latest',
       options: [
-        { label: 'API Error', value: 'gemini-2.5-flash-lite' },
+        { label: 'API Error', value: 'gemini-flash-lite-latest' },
       ],
     },
     {
@@ -78,7 +79,7 @@ const settings = {
   get tosAccepted() { return runtime.api.Data.load('tos-accepted'); },
   get forceLight() { return runtime.api.Data.load('force-light'); },
   get apiKey() { return runtime.api.Data.load('api-key') ? runtime.api.Data.load('api-key') : ''; },
-  get geminiModel() { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-2.0-flash-lite'; },
+  get geminiModel() { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-flash-lite-latest'; },
   get highlightStyle() { return runtime.api.Data.load('highlight-style') ? runtime.api.Data.load('highlight-style') : 'line-highlight'; },
 };
 
@@ -242,7 +243,7 @@ module.exports = class MessageScanAI {
       let discordButtons = parentNode.querySelectorAll(`.${modules.button?.button}`);
       let discordButton = discordButtons[discordButtons.length - 1];
       let newButton = discordButton.cloneNode(true);
-      discordButton.before(newButton);
+      discordButton.parentElement.before(newButton);
 
       // Update new button to look how we want
       newButton.classList.add('msai-element');
@@ -527,14 +528,13 @@ module.exports = class MessageScanAI {
       let id = o.name.split('/')[1];
 
       return {
-        label: (id === 'gemini-2.5-flash-lite') ? o.displayName + ' (Recommended)' : o.displayName,
+        label: (id === 'gemini-flash-lite-latest') ? o.displayName + ' (Recommended)' : o.displayName,
         value: id,
       };
     }).filter((entry) => {
-      return (
-        entry.value.includes('gemini') || entry.value.includes('learnlm')
-      ) && !(
-        entry.value.includes('vision') || entry.value.includes('thinking')
+      return (entry.value.includes('gemini')
+        && (entry.value.includes('pro') || entry.value.includes('flash'))
+        && !(entry.value.includes('image'))
       );
     });
   };
