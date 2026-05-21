@@ -3,21 +3,22 @@
  * @author programmer2514
  * @authorId 563652755814875146
  * @description Adds a button to scan messages for phishing/scams with AI
- * @version 2.1.3
+ * @version 2.1.4
  * @donate https://ko-fi.com/benjaminpryor
  * @patreon https://www.patreon.com/BenjaminPryor
  * @website https://github.com/programmer2514/BetterDiscord-MessageScanAI
  * @source https://github.com/programmer2514/BetterDiscord-MessageScanAI/raw/refs/heads/main/MessageScanAI.plugin.js
  */
 
+const DEFAULT_MODEL = 'gemini-3.1-flash-lite';
+
 const config = {
   changelog: [
     {
-      title: '2.1.3',
+      title: '2.1.4',
       type: 'added',
       items: [
-        'Fixed misaligned button',
-        'Updated to Gemini Flash-Lite Latest',
+        'Updated to Gemini 3.1 Flash Lite',
         'IF YOU ALREADY HAD THE PLUGIN, YOU WILL NEED TO MANUALLY SWITCH THE MODEL IN SETTINGS FOR IT TO CONTINUE WORKING',
       ],
     },
@@ -36,9 +37,9 @@ const config = {
       id: 'gemini-model',
       name: 'Gemini Model',
       note: 'DO NOT CHANGE UNLESS YOU KNOW WHAT YOU ARE DOING',
-      value: 'gemini-flash-lite-latest',
+      value: DEFAULT_MODEL,
       options: [
-        { label: 'API Error', value: 'gemini-flash-lite-latest' },
+        { label: 'API Error', value: DEFAULT_MODEL },
       ],
     },
     {
@@ -79,7 +80,7 @@ const settings = {
   get tosAccepted() { return runtime.api.Data.load('tos-accepted'); },
   get forceLight() { return runtime.api.Data.load('force-light'); },
   get apiKey() { return runtime.api.Data.load('api-key') ? runtime.api.Data.load('api-key') : ''; },
-  get geminiModel() { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : 'gemini-flash-lite-latest'; },
+  get geminiModel() { return runtime.api.Data.load('gemini-model') ? runtime.api.Data.load('gemini-model') : DEFAULT_MODEL; },
   get highlightStyle() { return runtime.api.Data.load('highlight-style') ? runtime.api.Data.load('highlight-style') : 'line-highlight'; },
 };
 
@@ -528,7 +529,7 @@ module.exports = class MessageScanAI {
       let id = o.name.split('/')[1];
 
       return {
-        label: (id === 'gemini-flash-lite-latest') ? o.displayName + ' (Recommended)' : o.displayName,
+        label: (id === DEFAULT_MODEL) ? o.displayName + ' (Recommended)' : o.displayName,
         value: id,
       };
     }).filter((entry) => {
